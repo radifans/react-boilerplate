@@ -1,3 +1,5 @@
+/* eslint-disable global-require */
+
 /**
  * COMMON WEBPACK CONFIGURATION
  */
@@ -5,6 +7,14 @@
 const path = require('path');
 const webpack = require('webpack');
 const Dotenv = require('dotenv-webpack');
+const purgecss = require('@fullhuman/postcss-purgecss');
+
+const isProd = process.env.NODE_ENV === 'production';
+
+const purgeCssConfig = purgecss({
+  content: ['./app/**/*.{js,jsx,ts,tsx}'],
+  defaultExtractor: content => content.match(/[\w-/:]+(?<!:)/g) || [],
+});
 
 module.exports = options => ({
   mode: options.mode,
@@ -34,7 +44,25 @@ module.exports = options => ({
         // for a list of loaders, see https://webpack.js.org/loaders/#styling
         test: /\.css$/,
         exclude: /node_modules/,
-        use: ['style-loader', 'css-loader'],
+        use: [
+          'style-loader',
+          {
+            loader: 'css-loader',
+            options: {
+              importLoaders: 1,
+            },
+          },
+          {
+            loader: 'postcss-loader',
+            options: {
+              plugins: [
+                require('tailwindcss'),
+                ...(isProd ? [purgeCssConfig] : []),
+                require('postcss-preset-env'),
+              ],
+            },
+          },
+        ],
       },
       {
         // Preprocess 3rd party .css files located in node_modules
